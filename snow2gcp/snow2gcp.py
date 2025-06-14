@@ -13,22 +13,6 @@ if TYPE_CHECKING:
     from snowflake.connector import SnowflakeConnection
 
 
-def create_snowflake_connection(
-    user: str, pwd: str, account: str, warehouse: str, database: str , schema: str
-) -> SnowflakeConnection:
-    conn = snowflake.connector.connect(
-        user=user,
-        password=pwd,
-        account=account,
-        warehouse=warehouse,
-        database=database,
-        schema=schema,
-    )
-    return conn
-
-
-
-
 def sanitize_path_component(component: str) -> str:
     """Sanitize database/schema/table names for use in GCS paths."""
     return re.sub(r'[^a-z0-9_]', '_', component.lower())

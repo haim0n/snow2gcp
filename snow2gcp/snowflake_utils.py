@@ -3,10 +3,25 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 import pandas as pd
+import snowflake.connector
 from pandas import DataFrame
 
 if TYPE_CHECKING:
     from snowflake.connector import SnowflakeConnection
+
+
+def create_snowflake_connection(
+    user: str, pwd: str, account: str, warehouse: str, database: str, schema: str
+) -> SnowflakeConnection:
+    conn = snowflake.connector.connect(
+        user=user,
+        password=pwd,
+        account=account,
+        warehouse=warehouse,
+        database=database,
+        schema=schema,
+    )
+    return conn
 
 
 def list_snowflake_databases(conn: SnowflakeConnection) -> DataFrame:
