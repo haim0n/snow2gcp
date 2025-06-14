@@ -27,6 +27,8 @@ def create_snowflake_connection(
     return conn
 
 
+
+
 def sanitize_path_component(component: str) -> str:
     """Sanitize database/schema/table names for use in GCS paths."""
     return re.sub(r'[^a-z0-9_]', '_', component.lower())
