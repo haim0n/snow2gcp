@@ -1,12 +1,13 @@
-from pydantic_settings import BaseSettings
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class SnowflakeAuth(BaseSettings):
-    username: str
+    model_config = SettingsConfigDict(env_prefix='SNOWFLAKE_')
+
+    user: str
     account: str
     password: str
 
 
-class GCS(BaseSettings):
-    gcs_bucket: str
-    gcs_base_path: str
+class Settings(BaseSettings):
+    snowflake_auth: SnowflakeAuth
