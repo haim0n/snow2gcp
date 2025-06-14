@@ -6,8 +6,9 @@ import re
 from typing import TYPE_CHECKING
 from typing import Tuple
 
-import snowflake.connector
 import tqdm
+
+from snow2gcp.utils.snowflake import create_snowflake_connection
 
 if TYPE_CHECKING:
     from snowflake.connector import SnowflakeConnection
@@ -90,7 +91,7 @@ def generate_complete_workflow(
     schema: str,
     table: str,
     base_gcs_path: str,
-    conn: 'SnowflakeConnection',
+    conn: SnowflakeConnection,
 ) -> None | list[tuple] | list[dict]:
     """Generate complete workflow for a table."""
 
