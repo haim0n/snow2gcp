@@ -92,7 +92,7 @@ def generate_complete_workflow(
     table: str,
     base_gcs_path: str,
     conn: SnowflakeConnection,
-) -> None | list[tuple] | list[dict]:
+):
     """Generate complete workflow for a table."""
 
     step1 = generate_column_query(database, schema, table)
@@ -112,7 +112,7 @@ def generate_complete_workflow(
             '-- ============================================================================'
         )
         # print(statement)
-        return cursor.execute(statement).fetchall()
+        print(cursor.execute(statement).fetchall())
 
 
 def main():
