@@ -19,9 +19,16 @@ git clone https://github.com/your-username/snow2gcp.git
 cd snow2gcp
 
 # Create virtual environment and install
-python -m venv venv
-source venv/bin/activate  # On Linux/macOS
-pip install -e .
+# Install uv if not already installed
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Create and activate virtual environment with uv
+uv venv
+source .venv/bin/activate  # On Linux/macOS
+# .venv\Scripts\activate  # On Windows
+
+# Install dependencies
+uv sync
 
 # Configure credentials
 cp .env.example .env
