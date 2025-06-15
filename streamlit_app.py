@@ -37,6 +37,11 @@ def init_session_state():
         st.session_state.export_running = False
 
 
+def generate_bigquery_dataset_name(database: str, schema: str) -> str:
+    """Generate BigQuery dataset name from Snowflake database and schema."""
+    return f"{sanitize_path_component(database)}_{sanitize_path_component(schema)}"
+
+
 def load_env_vars():
     """Load environment variables from .env file."""
     load_dotenv()
@@ -244,9 +249,7 @@ def export_to_bigquery(
             client = bigquery.Client(project=gcp_project)
         else:
             client = bigquery.Client()
-        dataset_id = (
-            f"{sanitize_path_component(database)}_{sanitize_path_component(schema)}"
-        )
+        dataset_id = generate_bigquery_dataset_name(database, schema)
         logger.log_success(f"BigQuery client initialized for project: {client.project}")
 
         # Create dataset if it doesn't exist
@@ -531,6 +534,9 @@ def main():
             st.write(
                 f"**BigQuery Import:** {'Enabled' if enable_bq_import else 'Disabled'}"
             )
+            if enable_bq_import and selected_database and selected_schema:
+                dataset_name = generate_bigquery_dataset_name(selected_database, selected_schema)
+                st.write(f"**BigQuery Dataset:** {dataset_name}")
 
         # Export button and logging
         if st.button(
