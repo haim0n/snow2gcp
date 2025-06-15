@@ -45,7 +45,8 @@ def load_env_vars():
         'password': os.getenv('SNOWFLAKE_PASSWORD', ''),
         'account': os.getenv('SNOWFLAKE_ACCOUNT', ''),
         'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', ''),
-        'gcs_bucket': os.getenv('GCS_BUCKET', '')
+        'gcs_bucket': os.getenv('GCS_BUCKET', ''),
+        'gcp_project': os.getenv('GCP_PROJECT', '')
     }
 
 
@@ -231,14 +232,18 @@ def export_view_to_gcs(database: str, schema: str, view: str, gcs_bucket: str, l
 
 
 def export_to_bigquery(
-    gcs_bucket: str, database: str, schema: str, views: List[str], logger
+    gcs_bucket: str, database: str, schema: str, views: List[str], gcp_project: str, logger
 ):
     """Create BigQuery tables from exported parquet files."""
     try:
         from google.cloud import bigquery
 
         logger.update("Initializing BigQuery client")
-        client = bigquery.Client()
+        # Use specified project if provided, otherwise use default project from credentials
+        if gcp_project:
+            client = bigquery.Client(project=gcp_project)
+        else:
+            client = bigquery.Client()
         dataset_id = (
             f"{sanitize_path_component(database)}_{sanitize_path_component(schema)}"
         )
@@ -488,6 +493,13 @@ def main():
                 value=env_vars['gcs_bucket'],
                 help="Enter the name of your Google Cloud Storage bucket",
         ).lstrip('gs://').rstrip('/')
+        
+        gcp_project = st.text_input(
+                "GCP Project ID",
+                placeholder="your-gcp-project-id",
+                value=env_vars['gcp_project'],
+                help="Enter your Google Cloud Project ID for BigQuery (optional - will use default if empty)",
+        )
 
     with col2:
         enable_bq_import = st.checkbox(
@@ -512,6 +524,10 @@ def main():
             for view in selected_views:
                 st.write(f"  - {view}")
             st.write(f"**GCS Bucket:** gs://{gcs_bucket}")
+            if gcp_project:
+                st.write(f"**GCP Project:** {gcp_project}")
+            else:
+                st.write("**GCP Project:** Default (from credentials)")
             st.write(
                 f"**BigQuery Import:** {'Enabled' if enable_bq_import else 'Disabled'}"
             )
@@ -568,6 +584,7 @@ def main():
                                 selected_database,
                                 selected_schema,
                                 selected_views,
+                                gcp_project,
                                 logger,
                             )
                             if not success:

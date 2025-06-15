@@ -60,6 +60,7 @@ A Streamlit application for exporting Snowflake data to Google Cloud Storage and
 
 4. Configure export settings:
    - Enter your GCS bucket name
+   - Enter your GCP Project ID (optional - will use default from credentials if empty)
    - Enable/disable BigQuery import
 
 5. Start the export:
@@ -111,6 +112,8 @@ A Streamlit application for exporting Snowflake data to Google Cloud Storage and
 | `SNOWFLAKE_USER` | Snowflake username | Yes |
 | `SNOWFLAKE_PASSWORD` | Snowflake password | Yes |
 | `SNOWFLAKE_ACCOUNT` | Snowflake account URL | Yes |
+| `GCP_PROJECT` | Google Cloud Project ID for BigQuery | No (will use default from credentials) |
+| `GCS_BUCKET` | Default GCS bucket name | No |
 | `GOOGLE_APPLICATION_CREDENTIALS` | Path to GCP service account key | Yes (for BigQuery) |
 
 ## Dependencies
