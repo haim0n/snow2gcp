@@ -1,22 +1,20 @@
 #!/usr/bin/env python3
 
-import streamlit as st
-import pandas as pd
-from typing import Optional, List, Tuple
-import time
 from contextlib import contextmanager
+from typing import List
 
-from snow2gcp.settings import SnowflakeAuth
+import streamlit as st
+
+from snow2gcp.snow2gcp import (
+    generate_column_query,
+    generate_unload_template,
+    sanitize_path_component,
+)
 from snow2gcp.utils.snowflake import (
     create_snowflake_connection,
     list_snowflake_databases,
     list_snowflake_schemas,
     list_snowflake_views,
-)
-from snow2gcp.snow2gcp import (
-    generate_column_query,
-    generate_unload_template,
-    sanitize_path_component,
 )
 
 
@@ -39,7 +37,7 @@ def st_text_logger(title: str, total: int):
     """Context manager for text-based logging."""
     log_container = st.container()
     log_placeholder = st.empty()
-    
+
     class TextLogger:
         def __init__(self):
             self.current = 0
@@ -83,11 +81,11 @@ def st_text_logger(title: str, total: int):
             log_text = "\n".join(self.logs[-20:])  # Show last 20 log entries
             with log_placeholder.container():
                 st.text_area(
-                    "Process Log", 
-                    value=log_text, 
-                    height=300, 
+                    "Process Log",
+                    value=log_text,
+                    height=300,
                     disabled=True,
-                    key=f"log_area_{len(self.logs)}"
+                    key=f"log_area_{len(self.logs)}",
                 )
 
     logger = TextLogger()
@@ -161,9 +159,7 @@ def load_views(database: str, schema: str):
         st.session_state.views = []
 
 
-def export_view_to_gcs(
-    database: str, schema: str, view: str, gcs_bucket: str, logger
-):
+def export_view_to_gcs(database: str, schema: str, view: str, gcs_bucket: str, logger):
     """Export a single view to GCS."""
     try:
         # Generate column query
@@ -189,9 +185,7 @@ def export_view_to_gcs(
 
         # Execute unload statements
         for i, statement in enumerate(statements, start=1):
-            logger.update(
-                f"Executing statement {i}/{len(statements)} for {view}"
-            )
+            logger.update(f"Executing statement {i}/{len(statements)} for {view}")
             if statement.strip():  # Skip empty statements
                 logger.log_info(f"Executing: {statement[:100]}...")
                 resp = cursor.execute(statement).fetchall()
@@ -417,9 +411,9 @@ def main():
 
     with col1:
         gcs_bucket = st.text_input(
-            "GCS Bucket Name",
-            placeholder="your-gcs-bucket-name",
-            help="Enter the name of your Google Cloud Storage bucket",
+                "GCS Bucket Name",
+                placeholder="your-gcs-bucket-name",
+                help="Enter the name of your Google Cloud Storage bucket",
         ).lstrip('gs://').rstrip('/')
 
     with col2:
@@ -472,7 +466,9 @@ def main():
                     failed_views = []
 
                     # Export each view to GCS
-                    logger.log_info(f"Starting export of {len(selected_views)} views to GCS")
+                    logger.log_info(
+                        f"Starting export of {len(selected_views)} views to GCS"
+                    )
                     for view in selected_views:
                         logger.log_info(f"Processing view: {view}")
                         success, error = export_view_to_gcs(
@@ -489,7 +485,9 @@ def main():
                     # Import to BigQuery if enabled
                     if enable_bq_import:
                         if failed_views:
-                            logger.log_info("Skipping BigQuery import due to failed exports")
+                            logger.log_info(
+                                "Skipping BigQuery import due to failed exports"
+                            )
                         else:
                             logger.log_info("Starting BigQuery import process")
                             success, error = export_to_bigquery(
@@ -500,14 +498,20 @@ def main():
                                 logger,
                             )
                             if not success:
-                                logger.log_error(f"Failed to import to BigQuery: {error}")
+                                logger.log_error(
+                                    f"Failed to import to BigQuery: {error}"
+                                )
 
                     # Log final results
                     successful_views = [
-                        v for v in selected_views if v not in [f[0] for f in failed_views]
+                        v
+                        for v in selected_views
+                        if v not in [f[0] for f in failed_views]
                     ]
 
-                    logger.log_info(f"Export completed: {len(successful_views)} successful, {len(failed_views)} failed")
+                    logger.log_info(
+                        f"Export completed: {len(successful_views)} successful, {len(failed_views)} failed"
+                    )
 
                 # Show summary results
                 successful_views = [
