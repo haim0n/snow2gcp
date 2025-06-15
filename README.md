@@ -236,6 +236,13 @@ pre-commit install
 
 ## Usage
 
+![Configure](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp1.jpg)
+
+![Execute](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp2.jpg)
+
+
+### How to Use
+
 1. Start the Streamlit application:
    ```bash
    streamlit run streamlit_app.py
@@ -246,6 +253,7 @@ pre-commit install
    - Enter or verify your Snowflake credentials
    - Specify warehouse (optional)
    - Click "Connect"
+
 
 3. Select data to export:
    - Choose a database from the dropdown
@@ -261,6 +269,8 @@ pre-commit install
    - Review the export summary
    - Click "Start Export"
    - Monitor progress via the progress bar
+
+
 
 ## Application Structure
 
@@ -292,13 +302,6 @@ pre-commit install
 - Handles table creation and data loading
 - Maintains original data types and structure
 
-#### User Interface
-- Clean, intuitive Streamlit interface
-- Sidebar for connection configuration
-- Multi-column layout for data selection
-- Expandable sections for configuration
-- Real-time progress feedback
-
 ## Environment Variables
 
 | Variable | Description | Required |
@@ -319,19 +322,6 @@ pre-commit install
 - `pandas`: Data manipulation and analysis
 - `pydantic-settings`: Settings management
 
-## File Structure
-
-```
-snow2gcp/
-├── streamlit_app.py          # Main Streamlit application
-├── snow2gcp/
-│   ├── snow2gcp.py          # Core export logic
-│   ├── settings.py          # Configuration management
-│   └── utils/
-│       └── snowflake.py     # Snowflake utility functions
-├── pyproject.toml           # Project dependencies
-└── README.md               # This file
-```
 
 ## Troubleshooting
 
