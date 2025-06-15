@@ -144,7 +144,7 @@ def export_view_to_gcs(
 
         # Generate unload statements
         progress_tracker.update(f"Generating unload statements for {view}")
-        base_gcs_path = f"gs://{gcs_bucket}/{sanitize_path_component(schema)}"
+        base_gcs_path = f"gcs://{gcs_bucket}/{sanitize_path_component(schema)}"
         statements = generate_unload_template(
             database, schema, view, base_gcs_path, step_1_res
         )
@@ -155,7 +155,8 @@ def export_view_to_gcs(
                 f"Executing statement {i}/{len(statements)} for {view}"
             )
             if statement.strip():  # Skip empty statements
-                cursor.execute(statement)
+                resp = cursor.execute(statement).fetchall()
+                progress_tracker.update(str(resp))
 
         return True, None
     except Exception as e:
@@ -368,8 +369,8 @@ def main():
         gcs_bucket = st.text_input(
             "GCS Bucket Name",
             placeholder="your-gcs-bucket-name",
-            help="Enter the name of your Google Cloud Storage bucket (without gs:// prefix)",
-        )
+            help="Enter the name of your Google Cloud Storage bucket",
+        ).lstrip('gs://').rstrip('/')
 
     with col2:
         enable_bq_import = st.checkbox(
