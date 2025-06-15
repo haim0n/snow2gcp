@@ -44,7 +44,8 @@ def load_env_vars():
         'user': os.getenv('SNOWFLAKE_USER', ''),
         'password': os.getenv('SNOWFLAKE_PASSWORD', ''),
         'account': os.getenv('SNOWFLAKE_ACCOUNT', ''),
-        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', '')
+        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', ''),
+        'gcs_bucket': os.getenv('GCS_BUCKET', '')
     }
 
 
@@ -484,6 +485,7 @@ def main():
         gcs_bucket = st.text_input(
                 "GCS Bucket Name",
                 placeholder="your-gcs-bucket-name",
+                value=env_vars['gcs_bucket'],
                 help="Enter the name of your Google Cloud Storage bucket",
         ).lstrip('gs://').rstrip('/')
 
