@@ -6,10 +6,6 @@ import re
 from typing import TYPE_CHECKING
 from typing import Tuple
 
-import tqdm
-
-from snow2gcp.utils.snowflake import create_snowflake_connection
-
 if TYPE_CHECKING:
     from snowflake.connector import SnowflakeConnection
 
