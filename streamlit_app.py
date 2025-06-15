@@ -35,32 +35,66 @@ def init_session_state():
 
 
 @contextmanager
-def st_progress_bar(title: str, total: int):
-    """Context manager for progress bar."""
-    progress_bar = st.progress(0)
-    status_text = st.empty()
-
-    class ProgressTracker:
+def st_text_logger(title: str, total: int):
+    """Context manager for text-based logging."""
+    log_container = st.container()
+    log_placeholder = st.empty()
+    
+    class TextLogger:
         def __init__(self):
             self.current = 0
+            self.logs = []
+            self.logs.append(f"🚀 Starting {title}...")
+            self._update_display()
 
         def update(self, message: str = ""):
             self.current += 1
-            progress = self.current / total
-            progress_bar.progress(progress)
-            status_text.text(f"{title}: {message} ({self.current}/{total})")
+            step_msg = f"Step {self.current}/{total}: {message}"
+            self.logs.append(f"⏳ {step_msg}")
+            self._update_display()
+
+        def log_result(self, result: str):
+            """Log a result or response."""
+            if result.strip():
+                self.logs.append(f"📊 Result: {result}")
+                self._update_display()
+
+        def log_success(self, message: str):
+            """Log a success message."""
+            self.logs.append(f"✅ {message}")
+            self._update_display()
+
+        def log_error(self, message: str):
+            """Log an error message."""
+            self.logs.append(f"❌ {message}")
+            self._update_display()
+
+        def log_info(self, message: str):
+            """Log an info message."""
+            self.logs.append(f"ℹ️ {message}")
+            self._update_display()
 
         def finish(self):
-            progress_bar.progress(1.0)
-            status_text.text(f"{title}: Completed!")
+            self.logs.append(f"🎉 {title} completed!")
+            self._update_display()
 
-    tracker = ProgressTracker()
+        def _update_display(self):
+            """Update the display with current logs."""
+            log_text = "\n".join(self.logs[-20:])  # Show last 20 log entries
+            with log_placeholder.container():
+                st.text_area(
+                    "Process Log", 
+                    value=log_text, 
+                    height=300, 
+                    disabled=True,
+                    key=f"log_area_{len(self.logs)}"
+                )
+
+    logger = TextLogger()
     try:
-        yield tracker
+        yield logger
     finally:
-        time.sleep(0.5)  # Brief pause to show completion
-        progress_bar.empty()
-        status_text.empty()
+        logger.finish()
 
 
 def connect_to_snowflake(
@@ -128,64 +162,75 @@ def load_views(database: str, schema: str):
 
 
 def export_view_to_gcs(
-    database: str, schema: str, view: str, gcs_bucket: str, progress_tracker
+    database: str, schema: str, view: str, gcs_bucket: str, logger
 ):
     """Export a single view to GCS."""
     try:
         # Generate column query
-        progress_tracker.update(f"Generating column query for {view}")
+        logger.update(f"Generating column query for {view}")
         column_query = generate_column_query(database, schema, view)
+        logger.log_info(f"Generated query: {column_query[:100]}...")
 
         # Execute column query
-        progress_tracker.update(f"Fetching column information for {view}")
+        logger.update(f"Fetching column information for {view}")
         cursor = st.session_state.connection.cursor()
         query_resp = cursor.execute(column_query).fetchall()[0]
         step_1_res = ''.join(query_resp[0].split('\n'))
+        logger.log_success(f"Retrieved column information for {view}")
+        logger.log_result(f"Column info (first 200 chars): {step_1_res[:200]}...")
 
         # Generate unload statements
-        progress_tracker.update(f"Generating unload statements for {view}")
+        logger.update(f"Generating unload statements for {view}")
         base_gcs_path = f"gcs://{gcs_bucket}/{sanitize_path_component(schema)}"
         statements = generate_unload_template(
             database, schema, view, base_gcs_path, step_1_res
         )
+        logger.log_success(f"Generated {len(statements)} unload statements for {view}")
 
         # Execute unload statements
         for i, statement in enumerate(statements, start=1):
-            progress_tracker.update(
+            logger.update(
                 f"Executing statement {i}/{len(statements)} for {view}"
             )
             if statement.strip():  # Skip empty statements
+                logger.log_info(f"Executing: {statement[:100]}...")
                 resp = cursor.execute(statement).fetchall()
-                progress_tracker.update(str(resp))
+                logger.log_result(f"Statement {i} result: {str(resp)}")
 
+        logger.log_success(f"Successfully exported {view} to GCS")
         return True, None
     except Exception as e:
+        logger.log_error(f"Failed to export {view}: {str(e)}")
         return False, str(e)
 
 
 def export_to_bigquery(
-    gcs_bucket: str, database: str, schema: str, views: List[str], progress_tracker
+    gcs_bucket: str, database: str, schema: str, views: List[str], logger
 ):
     """Create BigQuery tables from exported parquet files."""
     try:
         from google.cloud import bigquery
 
+        logger.update("Initializing BigQuery client")
         client = bigquery.Client()
         dataset_id = (
             f"{sanitize_path_component(database)}_{sanitize_path_component(schema)}"
         )
+        logger.log_success(f"BigQuery client initialized for project: {client.project}")
 
         # Create dataset if it doesn't exist
-        progress_tracker.update("Creating BigQuery dataset")
+        logger.update("Creating BigQuery dataset")
         try:
             dataset = client.get_dataset(dataset_id)
+            logger.log_info(f"Dataset {dataset_id} already exists")
         except:
             dataset = bigquery.Dataset(f"{client.project}.{dataset_id}")
             dataset = client.create_dataset(dataset, exists_ok=True)
+            logger.log_success(f"Created dataset: {dataset_id}")
 
         # Create tables from parquet files
         for view in views:
-            progress_tracker.update(f"Creating BigQuery table for {view}")
+            logger.update(f"Creating BigQuery table for {view}")
             table_id = f"{dataset_id}.{sanitize_path_component(view)}"
 
             job_config = bigquery.LoadJobConfig(
@@ -194,6 +239,7 @@ def export_to_bigquery(
             )
 
             gcs_path = f"gs://{gcs_bucket}/{sanitize_path_component(schema)}/{sanitize_path_component(view)}/*.parquet"
+            logger.log_info(f"Loading from GCS path: {gcs_path}")
 
             load_job = client.load_table_from_uri(
                 gcs_path,
@@ -201,10 +247,14 @@ def export_to_bigquery(
                 job_config=job_config,
             )
 
+            logger.log_info(f"BigQuery load job started for {view}")
             load_job.result()  # Wait for job to complete
+            logger.log_success(f"Successfully created table: {table_id}")
 
+        logger.log_success("All BigQuery tables created successfully")
         return True, None
     except Exception as e:
+        logger.log_error(f"BigQuery import failed: {str(e)}")
         return False, str(e)
 
 
@@ -399,7 +449,7 @@ def main():
                 f"**BigQuery Import:** {'Enabled' if enable_bq_import else 'Disabled'}"
             )
 
-        # Export button and progress
+        # Export button and logging
         if st.button(
             "🚀 Start Export", type="primary", disabled=st.session_state.export_running
         ):
@@ -418,35 +468,48 @@ def main():
                         len(selected_views) + 1
                     )  # Additional steps for BQ import
 
-                with st_progress_bar("Exporting data", total_steps) as progress:
+                with st_text_logger("Exporting data", total_steps) as logger:
                     failed_views = []
 
                     # Export each view to GCS
+                    logger.log_info(f"Starting export of {len(selected_views)} views to GCS")
                     for view in selected_views:
+                        logger.log_info(f"Processing view: {view}")
                         success, error = export_view_to_gcs(
                             selected_database,
                             selected_schema,
                             view,
                             gcs_bucket,
-                            progress,
+                            logger,
                         )
                         if not success:
                             failed_views.append((view, error))
-                            st.error(f"❌ Failed to export {view}: {error}")
+                            logger.log_error(f"Failed to export {view}: {error}")
 
                     # Import to BigQuery if enabled
-                    if enable_bq_import and not failed_views:
-                        success, error = export_to_bigquery(
-                            gcs_bucket,
-                            selected_database,
-                            selected_schema,
-                            selected_views,
-                            progress,
-                        )
-                        if not success:
-                            st.error(f"❌ Failed to import to BigQuery: {error}")
+                    if enable_bq_import:
+                        if failed_views:
+                            logger.log_info("Skipping BigQuery import due to failed exports")
+                        else:
+                            logger.log_info("Starting BigQuery import process")
+                            success, error = export_to_bigquery(
+                                gcs_bucket,
+                                selected_database,
+                                selected_schema,
+                                selected_views,
+                                logger,
+                            )
+                            if not success:
+                                logger.log_error(f"Failed to import to BigQuery: {error}")
 
-                # Show results
+                    # Log final results
+                    successful_views = [
+                        v for v in selected_views if v not in [f[0] for f in failed_views]
+                    ]
+
+                    logger.log_info(f"Export completed: {len(successful_views)} successful, {len(failed_views)} failed")
+
+                # Show summary results
                 successful_views = [
                     v for v in selected_views if v not in [f[0] for f in failed_views]
                 ]
@@ -455,7 +518,7 @@ def main():
                     st.success(
                         f"✅ Successfully exported {len(successful_views)} views!"
                     )
-                    if enable_bq_import:
+                    if enable_bq_import and not failed_views:
                         st.success("✅ Successfully imported to BigQuery!")
 
                 if failed_views:
