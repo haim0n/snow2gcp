@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def create_snowflake_connection(
-    user: str, pwd: str, account: str, warehouse: str, database: str, schema: str
+    user: str, pwd: str, account: str, warehouse: str | None = None, database: str | None = None, schema: str | None = None
 ) -> SnowflakeConnection:
     conn = snowflake.connector.connect(
         user=user,

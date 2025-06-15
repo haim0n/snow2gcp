@@ -117,7 +117,12 @@ def generate_complete_workflow(
 
 def main():
     """Generate complete workflows for all tables."""
-
+    from snow2gcp.settings import Settings
+    import os
+    
+    # Load settings
+    settings = Settings()
+    
     tables = [
         ('DB_NAME', 'SCHEMA_NAME', 'VIEW_NAME'),
     ]
@@ -125,21 +130,23 @@ def main():
         "-- ============================================================================"
     )
     print("-- Snowflake Table Unload Script")
-    print(f"-- Generated on: 2025-06-08 07:45:41 UTC by: haim0n")
+    print(f"-- Generated on: 2025-06-14 UTC")
     print(
         "-- ============================================================================"
     )
     print()
 
     conn = create_snowflake_connection(
-        user=USER,
-        pwd=PASSWORD,
-        account=ACCOUNT,
-        warehouse=SNOWFLAKE_WAREHOUSE,
-        database=DATABASE,
-        schema=SNOWFLAKE_SCHEMA,
+        user=settings.snowflake_auth.user,
+        pwd=settings.snowflake_auth.password,
+        account=settings.snowflake_auth.account,
+        warehouse=os.getenv('SNOWFLAKE_WAREHOUSE', 'COMPUTE_WH'),
+        database=os.getenv('SNOWFLAKE_DATABASE', 'DATABASE'),
+        schema=os.getenv('SNOWFLAKE_SCHEMA', 'SCHEMA'),
     )
 
+    gcs_bucket = os.getenv('GCS_BUCKET', 'your-bucket-name')
+    
     succeeded = 0
     for database, schema, table in tqdm.tqdm(tables):
         try:
