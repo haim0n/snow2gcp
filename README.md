@@ -1,6 +1,13 @@
 # Snow2GCP - Snowflake to BigQuery Exporter
 
 A Streamlit application for exporting Snowflake data to Google Cloud Storage and optionally importing to BigQuery.
+   
+## Sample Usage
+
+![Configure](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp1.jpg)
+
+![Execute](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp2.jpg)
+
 
 ## Quick Start
 
@@ -232,13 +239,6 @@ pip install -e ".[dev]"
 # Install pre-commit hooks
 pre-commit install
 ```
-
-
-## Usage
-
-![Configure](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp1.jpg)
-
-![Execute](https://github.com/haim0n/snow2gcp/raw/master/resources/images/snow2gcp2.jpg)
 
 
 ### How to Use
