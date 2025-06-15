@@ -15,6 +15,7 @@ from snow2gcp.utils.snowflake import (
     list_snowflake_databases,
     list_snowflake_schemas,
     list_snowflake_views,
+    list_snowflake_warehouses,
 )
 
 
@@ -22,6 +23,8 @@ def init_session_state():
     """Initialize session state variables."""
     if 'connection' not in st.session_state:
         st.session_state.connection = None
+    if 'warehouses' not in st.session_state:
+        st.session_state.warehouses = []
     if 'databases' not in st.session_state:
         st.session_state.databases = []
     if 'schemas' not in st.session_state:
@@ -99,6 +102,7 @@ def connect_to_snowflake(
     user: str,
     password: str,
     account: str,
+    warehouse: str | None = None,
 ):
     """Connect to Snowflake and store connection in session state."""
     try:
@@ -107,6 +111,7 @@ def connect_to_snowflake(
                 user=user,
                 pwd=password,
                 account=account,
+                warehouse=warehouse,
             )
             st.session_state.connection = conn
             st.success("✅ Connected to Snowflake successfully!")
@@ -127,6 +132,19 @@ def load_databases():
             st.session_state.databases = df['name'].tolist()
     except Exception as e:
         st.error(f"❌ Failed to load databases: {str(e)}")
+
+
+def load_warehouses():
+    """Load warehouses from Snowflake."""
+    if st.session_state.connection is None:
+        return
+
+    try:
+        with st.spinner("Loading warehouses..."):
+            df = list_snowflake_warehouses(st.session_state.connection)
+            st.session_state.warehouses = df['name'].tolist()
+    except Exception as e:
+        st.error(f"❌ Failed to load warehouses: {str(e)}")
 
 
 def load_schemas(database: str):
@@ -266,6 +284,7 @@ def debug_connection_info():
                 st.write(f"**Current Database:** {current_db}")
                 st.write(f"**Current Schema:** {current_schema}")
                 st.write(f"**Current Warehouse:** {current_warehouse}")
+                st.write(f"**Cached Warehouses:** {len(st.session_state.warehouses)}")
                 st.write(f"**Cached Databases:** {len(st.session_state.databases)}")
                 st.write(f"**Cached Schemas:** {len(st.session_state.schemas)}")
                 st.write(f"**Cached Views:** {len(st.session_state.views)}")
@@ -296,13 +315,20 @@ def main():
             account = st.text_input(
                 "Account", placeholder="your_account.snowflakecomputing.com"
             )
+            warehouse = st.text_input(
+                "Warehouse (optional)", 
+                placeholder="COMPUTE_WH",
+                help="Leave empty to connect without a default warehouse"
+            )
             connect_btn = st.form_submit_button(
                 "Connect", type="primary", use_container_width=True
             )
 
             if connect_btn:
                 if all([user, password, account]):
-                    if connect_to_snowflake(user, password, account):
+                    warehouse_param = warehouse.strip() if warehouse.strip() else None
+                    if connect_to_snowflake(user, password, account, warehouse_param):
+                        load_warehouses()
                         load_databases()
                 else:
                     st.error("Please fill in all connection fields")
@@ -310,6 +336,34 @@ def main():
         # Connection status
         if st.session_state.connection:
             st.success("🟢 Connected")
+            
+            # Warehouse selection section (only show if connected)
+            st.header("🏭 Warehouse Selection")
+            
+            # Refresh warehouses button
+            if st.button("🔄 Refresh Warehouses", help="Refresh warehouse list"):
+                load_warehouses()
+            
+            # Warehouse selection
+            if st.session_state.warehouses:
+                selected_warehouse = st.selectbox(
+                    "Select Warehouse",
+                    options=[""] + st.session_state.warehouses,  # Empty option to allow no selection
+                    help="Choose a warehouse for query execution",
+                    key="warehouse_select"
+                )
+                
+                # Apply warehouse selection
+                if selected_warehouse and selected_warehouse != st.session_state.get('current_warehouse'):
+                    try:
+                        cursor = st.session_state.connection.cursor()
+                        cursor.execute(f"USE WAREHOUSE {selected_warehouse}")
+                        st.session_state.current_warehouse = selected_warehouse
+                        st.success(f"✅ Using warehouse: {selected_warehouse}")
+                    except Exception as e:
+                        st.error(f"❌ Failed to set warehouse: {str(e)}")
+            else:
+                st.info("Loading warehouses...")
         else:
             st.error("🔴 Not connected")
 

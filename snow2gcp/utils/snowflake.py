@@ -29,6 +29,11 @@ def list_snowflake_databases(conn: SnowflakeConnection) -> DataFrame:
     return pd.read_sql_query(sql="SHOW DATABASES", con=conn)
 
 
+def list_snowflake_warehouses(conn: SnowflakeConnection) -> DataFrame:
+    """List all warehouses in Snowflake."""
+    return pd.read_sql_query(sql="SHOW WAREHOUSES", con=conn)
+
+
 def list_snowflake_schemas(conn: SnowflakeConnection, database: str) -> DataFrame:
     """List all schemas in a given Snowflake database."""
     return pd.read_sql_query(sql=f"SHOW SCHEMAS IN DATABASE {database}", con=conn)
