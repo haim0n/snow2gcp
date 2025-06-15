@@ -1,9 +1,11 @@
 #!/usr/bin/env python3
 
+import os
 from contextlib import contextmanager
 from typing import List
 
 import streamlit as st
+from dotenv import load_dotenv
 
 from snow2gcp.snow2gcp import (
     generate_column_query,
@@ -33,6 +35,17 @@ def init_session_state():
         st.session_state.views = []
     if 'export_running' not in st.session_state:
         st.session_state.export_running = False
+
+
+def load_env_vars():
+    """Load environment variables from .env file."""
+    load_dotenv()
+    return {
+        'user': os.getenv('SNOWFLAKE_USER', ''),
+        'password': os.getenv('SNOWFLAKE_PASSWORD', ''),
+        'account': os.getenv('SNOWFLAKE_ACCOUNT', ''),
+        'warehouse': os.getenv('SNOWFLAKE_WAREHOUSE', '')
+    }
 
 
 @contextmanager
@@ -300,6 +313,9 @@ def main():
     )
 
     init_session_state()
+    
+    # Load environment variables
+    env_vars = load_env_vars()
 
     st.title("❄️ Snow2GCP - Snowflake to BigQuery Exporter")
     st.markdown(
@@ -310,14 +326,15 @@ def main():
         st.header("🔐 Snowflake Connection")
 
         with st.form("connection_form"):
-            user = st.text_input("User", placeholder="snowflake_user")
-            password = st.text_input("Password", type="password")
+            user = st.text_input("User", placeholder="snowflake_user", value=env_vars['user'])
+            password = st.text_input("Password", type="password", value=env_vars['password'])
             account = st.text_input(
-                "Account", placeholder="your_account.snowflakecomputing.com"
+                "Account", placeholder="your_account.snowflakecomputing.com", value=env_vars['account']
             )
             warehouse = st.text_input(
                 "Warehouse (optional)", 
                 placeholder="COMPUTE_WH",
+                value=env_vars['warehouse'],
                 help="Leave empty to connect without a default warehouse"
             )
             connect_btn = st.form_submit_button(
