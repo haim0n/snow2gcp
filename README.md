@@ -15,7 +15,7 @@ For experienced users who want to get started immediately:
 
 ```bash
 # Clone and setup
-git clone https://github.com/your-username/snow2gcp.git
+git clone https://github.com/haim0n/snow2gcp.git
 cd snow2gcp
 
 # Create virtual environment and install
@@ -406,7 +406,7 @@ The application provides detailed error messages in the Streamlit interface. Che
 
 If you encounter issues not covered here:
 
-1. Check the [Issues](https://github.com/your-username/snow2gcp/issues) page on GitHub
+1. Check the [Issues](https://github.com/haim0n/snow2gcp/issues) page on GitHub
 2. Enable verbose logging by setting `STREAMLIT_LOG_LEVEL=debug`
 3. Include the full error message and your environment details when reporting issues
 
