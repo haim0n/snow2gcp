@@ -30,7 +30,7 @@ source .venv/bin/activate  # On Linux/macOS
 # Install dependencies
 uv sync
 
-# Configure credentials
+# Configure credentials (Optional but recommended - you can also fill these in UI)
 cp .env.example .env
 # Edit .env with your credentials
 
